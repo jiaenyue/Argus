@@ -1,4 +1,3 @@
-
 # Project Argus: 天枢计划
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
@@ -128,7 +127,7 @@ graph TD
 我们坚信**数据质量是量化交易的生命线**。Project Argus 将“质量内建”原则贯穿于数据生命周期的每个环节。
 
 ### 核心治理原则
-1.  **数据源优先级原则 (Source Priority):** `miniQMT` 为行情主源，`Tushare` 为补充和备份源。
+1.  **数据源优先级原则 (Source Priority):`miniQMT` 为行情主源，`Tushare` 为补充和备份源。
 2.  **黄金标准层原则 (Golden Record):** 只有 `Gold` 层数据对外发布，严禁消费中间层。
 3.  **完整数据血缘原则 (Data Lineage):** 所有融合字段必须记录其来源 (`_source`)。
 4.  **质量内建原则 (Quality Built-in):** 每个字段都关联明确的质量校验规则。
@@ -211,6 +210,8 @@ graph LR
 | [`user_story.md`](./doc/user_story.md) | **用户故事全集**：从不同角色视角描述了项目的功能和价值。 |
 | [`backlog.md`](./doc/backlog.md) | **项目待办事项看板**：以看板形式可视化了详细的开发任务和依赖。 |
 | [`risk_register.md`](./doc/risk_register.md) | **风险登记册**：全面识别、评估并规划了项目中的所有潜在风险。 |
+| [`xtdata.md`](./doc/api/xtdata.md) | **行情数据API文档**：miniQMT行情数据模块接口说明（历史/实时K线、分笔、财务数据等） |
+| [`xttrader.md`](./doc/api/xttrader.md) | **交易模块API文档**：miniQMT交易模块接口说明（下单、撤单、持仓管理等） |
 
 ## 🤝 贡献指南 (Contributing)
 
