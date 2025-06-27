@@ -1,0 +1,29 @@
+  
+# 排除memory-bank目录  
+memory-bank/  
+
+# 通用规则  
+*.log  
+*.tmp  
+.DS_Store  
+Thumbs.db  
+
+# Python规则  
+__pycache__/  
+*.pyc  
+.python-version  
+
+# 数据文件  
+*.parquet  
+*.csv  
+*.feather  
+
+# 敏感文件  
+.env  
+*.key  
+credentials.json  
+
+# IDE/编辑器  
+.vscode/  
+.idea/  
+.ipynb_checkpoints/  
