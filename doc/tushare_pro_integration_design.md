@@ -2,7 +2,7 @@
 
 ##  Tushare Pro 集成设计文档
 
-**项目名称:** 面向NautilusTrader的高质量A股数据管道系统
+**项目名称:** Project Argus: 天枢计划
 **文档版本:** 2.0 (整合最终版)
 **编制人:** 资深研发工程师 & 项目团队
 **日期:** 2023-10-30
@@ -30,17 +30,17 @@ graph LR
         B[基础行情]
         C[财务数据]
         D[公司行动]
-        E[分析师数据 & 特色数据]
+        E["分析师数据 & 特色数据"]
     end
     
     subgraph "下游应用价值"
-        G[行情备份 & 交叉验证]
-        H[基本面分析 & 因子计算]
-        I[复权因子计算 & 事件驱动策略]
-        J[策略增强 & 市场情绪分析]
+        G["行情备份 & 交叉验证"]
+        H["基本面分析 & 因子计算"]
+        I["复权因子计算 & 事件驱动策略"]
+        J["策略增强 & 市场情绪分析"]
     end
 
-    A --> B & C & D & E
+    A --> B; A --> C; A --> D; A --> E
     B --> G
     C --> H
     D --> I
@@ -235,12 +235,12 @@ def check_multi_source_consistency(qmt_data: pd.DataFrame, ts_data: pd.DataFrame
 #### 5.2 故障转移流程 (针对行情数据)
 ```mermaid
 graph TD
-    A[Tushare适配器<br>检测到故障<br>(配额耗尽/持续5xx)] --> B{是否为行情数据采集?}
+    A["Tushare适配器<br>检测到故障<br>(配额耗尽/持续5xx)"] --> B{是否为行情数据采集?}
     B -- Yes --> C[采集器将Tushare源标记为'UNAVAILABLE']
     B -- No --> D[任务失败，发送P1告警]
-    C --> E[Silver层融合引擎<br>仅使用miniQMT数据]
+    C --> E["Silver层融合引擎<br>仅使用miniQMT数据"]
     E --> F[数据管道继续运行，但有告警]
-    F --> G[Grafana看板<br>显示数据源降级]
+    F --> G["Grafana看板<br>显示数据源降级"]
 ```
 
 ### 6. 安全设计
@@ -290,14 +290,14 @@ sequenceDiagram
 graph LR
     subgraph K8s集群
         subgraph 数据管道命名空间
-            A[Airflow Scheduler] --> C1 & C2
-            C1[采集Pod 1<br>(行情)] -- 数据 --> K[Kafka]
-            C2[采集Pod 2<br>(财务)] -- 数据 --> K
-            CM[ConfigMap/Secrets<br>(配置/凭证)]-.->C1 & C2
+            A[Airflow Scheduler] --> C1; A --> C2
+            C1["采集Pod 1<br>(行情)"] -- 数据 --> K[Kafka]
+            C2["采集Pod 2<br>(财务)"] -- 数据 --> K
+            CM["ConfigMap/Secrets<br>(配置/凭证)"]-.->C1; CM-.->C2
         end
         
         subgraph 监控命名空间
-            P[Prometheus] -- 抓取 --> C1 & C2
+            P[Prometheus] -- 抓取 --> C1; P -- 抓取 --> C2
             P --> AL[Alertmanager]
             AL -- 告警 --> OpsTeam
             G[Grafana] -- 查询 --> P

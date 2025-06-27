@@ -1,7 +1,7 @@
 
 ## 多源数据治理规范与数据字典 (V2.0 - 整合最终版)
 
-**项目名称:** 面向NautilusTrader的高质量A股数据管道系统（集成Tushare Pro）
+**项目名称:** Project Argus: 天枢计划
 **文档版本:** 2.0
 **编制人:** 资深数据工程师
 **日期:** 2023-10-29
@@ -42,15 +42,15 @@ graph TD
     A --> C[补充维度数据]
     A --> D[元数据]
     
-    B --> E[主数据源: miniQMT (P1)]
-    B --> F[备用数据源: Tushare (P2)]
-    C --> G[首选数据源: Tushare Pro (P1)]
-    D --> H[内部生成/系统计算]
+    B --> E["主数据源: miniQMT (P1)"]
+    B --> F["备用数据源: Tushare (P2)"]
+    C --> G["首选数据源: Tushare Pro (P1)"]
+    D --> H["内部生成/系统计算"]
     
     subgraph 融合优先级规则
-        P1[行情字段 (OHLCV)] --> R1(miniQMT > Tushare)
-        P2[财务/估值字段] --> R2(Tushare > miniQMT)
-        P3[公司行动/评级] --> R3(Tushare Pro 唯一)
+        P1["行情字段 (OHLCV)"] --> R1("miniQMT > Tushare")
+        P2["财务/估值字段"] --> R2("Tushare > miniQMT")
+        P3["公司行动/评级"] --> R3("Tushare Pro 唯一")
     end
 ```
 
@@ -96,12 +96,16 @@ graph LR
     subgraph "质量监控工具与指标"
         L0 -- "API成功率, 配额" --> M1(Prometheus)
         L1 -- "格式/结构校验" --> M2(Great Expectations)
-        L2 -- "多源一致性, 业务逻辑" --> M3(GE + 自定义校验器)
+        L2 -- "多源一致性, 业务逻辑" --> M3("GE + 自定义校验器")
         L3 -- "Schema合规, 事务完整性" --> M4(Delta Lake Audits)
-        L4 -- "回测基准偏差" --> M5(Nautilus Logs/Metrics)
+        L4 -- "回测基准偏差" --> M5("Nautilus Logs/Metrics")
     end
 
-    M1 & M2 & M3 & M4 & M5 --> VIZ[Grafana 质量看板]
+    M1 --> VIZ[Grafana 质量看板]
+    M2 --> VIZ
+    M3 --> VIZ
+    M4 --> VIZ
+    M5 --> VIZ
 ```
 *   **多源一致性标准:**
     *   **收盘价差异容忍度:** 在正常市场波动下，`abs(QMT_close - TS_close) / QMT_close` 应 ≤ 0.5%。
@@ -163,13 +167,13 @@ graph LR
 ```mermaid
 graph TB
     subgraph "SOP: 数据质量异常处理"
-        A[发现异常<br>(Prometheus/GE告警)] --> B{判断严重级别 P0/P1/P2}
-        B -->|P0: 管道中断/核心数据污染| C[1. 停止下游任务<br>2. 电话/App告警核心团队<br>3. 自动触发故障转移]
-        B -->|P1: 关键规则失败/可隔离| D[1. 隔离问题数据分区<br>2. 自动触发修复任务<br>3. IM+邮件告警]
-        B -->|P2: 非核心指标告警| E[1. 记录警告日志<br>2. 创建普通工单<br>3. 在日会中跟踪]
+        A["发现异常<br>(Prometheus/GE告警)"] --> B{"判断严重级别 P0/P1/P2"}
+        B --"P0: 管道中断/核心数据污染"--> C["1. 停止下游任务<br>2. 电话/App告警核心团队<br>3. 自动触发故障转移"]
+        B --"P1: 关键规则失败/可隔离"--> D["1. 隔离问题数据分区<br>2. 自动触发修复任务<br>3. IM+邮件告警"]
+        B --"P2: 非核心指标告警"--> E["1. 记录警告日志<br>2. 创建普通工单<br>3. 在日会中跟踪"]
         
-        C --> F[切换至备用数据源(Tushare)<br>SLA: 15分钟内恢复]
-        D --> G[尝试使用备用源修复<br>SLA: 2小时内解决]
+        C --> F["切换至备用数据源(Tushare)<br>SLA: 15分钟内恢复"]
+        D --> G["尝试使用备用源修复<br>SLA: 2小时内解决"]
     end
 ```
 

@@ -1,6 +1,8 @@
-### 系统架构设计 (V2.0 - 整合版)
+# Project Argus: 天枢计划
 
-#### 1. 核心架构理念
+## 系统架构设计 (V2.0 - 整合版)
+
+### 1. 核心架构理念
 
 本架构是前两个版本的演进与融合，旨在构建一个**工业级、高韧性、可演进**的数据平台。其核心设计理念升级为：
 
@@ -29,20 +31,20 @@ graph TD
 
         %% Buffering
         subgraph "C. 消息总线 (Message Bus)"
-            KAFKA[fa:fas fa-stream Kafka<br><i>raw_data_topic</i>]
+            KAFKA["fa:fas fa-stream Kafka<br><i>raw_data_topic</i>"]
         end
 
         %% Processing
         subgraph "D. 数据处理引擎 (Processing Engine)"
-            BP[Bronze Processor<br><i>格式化/标准化</i>]
-            SP[Silver Processor<br><i>融合/清洗/填补</i>]
-            GP[Gold Publisher<br><i>发布到Delta Lake</i>]
+            BP["Bronze Processor<br><i>格式化/标准化</i>"]
+            SP["Silver Processor<br><i>融合/清洗/填补</i>"]
+            GP["Gold Publisher<br><i>发布到Delta Lake</i>"]
         end
 
         %% Storage
         subgraph "E. 事务性数据湖仓 (Transactional Lakehouse)"
-            DL[fa:fas fa-gem Delta Lake<br><i>Gold Layer</i>]
-            PART[fa:fas fa-folder-tree Partitioned Storage<br><i>/gold/date=.../symbol=...</i>]
+            DL["fa:fas fa-gem Delta Lake<br><i>Gold Layer</i>"]
+            PART["fa:fas fa-folder-tree Partitioned Storage<br><i>/gold/date=.../symbol=...</i>"]
         end
 
         %% Consumption
@@ -92,11 +94,15 @@ graph TD
     %% Quality & Observability Flow
     SP -- "2. 待验数据" --> GE
     GE -- "验证结果" --> QDE
-    DC -- "指标/日志" --> PROM & ELK
-    BP -- "指标/日志" --> PROM & ELK
-    SP -- "指标/日志" --> PROM & ELK
+    DC -- "指标/日志" --> PROM
+    DC -- "指标/日志" --> ELK
+    BP -- "指标/日志" --> PROM
+    BP -- "指标/日志" --> ELK
+    SP -- "指标/日志" --> PROM
+    SP -- "指标/日志" --> ELK
     GE -- "质量指标" --> PROM
-    PROM & ELK -- "数据源" --> GRA
+    PROM -- "数据源" --> GRA
+    ELK -- "数据源" --> GRA
     GRA -- "看板" --> USER
 
     %% Styling

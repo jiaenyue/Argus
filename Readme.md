@@ -91,10 +91,21 @@ graph TD
 
     %% Quality & Observability Flow
     SP -- "待验数据" --> GE -- "验证结果" --> QDE
-    subgraph "全链路指标/日志"
-        direction LR
-        DC & BP & SP & GE
-    end --> PROM & ELK --> GRA
+
+    %% Metrics and logs from components flow to Prometheus and ELK Stack
+    DC --> PROM
+    BP --> PROM
+    SP --> PROM
+    GE --> PROM
+
+    DC --> ELK
+    BP --> ELK
+    SP --> ELK
+    GE --> ELK
+
+    %% Prometheus and ELK Stack feed data to Grafana for visualization
+    PROM --> GRA
+    ELK --> GRA
     
     GRA -- "看板" --> USER
 ```
@@ -130,13 +141,13 @@ graph TD
 graph LR
     subgraph Docker Host
         subgraph "Docker Compose Services"
-            A[Airflow<br>(Scheduler, Webserver)]
-            C[Data Collector<br>(as Airflow Task)]
-            P[Data Processor<br>(as Airflow Task)]
+            A["Airflow<br>(Scheduler, Webserver)"]
+            C["Data Collector<br>(as Airflow Task)"]
+            P["Data Processor<br>(as Airflow Task)"]
             K[Kafka & Zookeeper]
-            R[Redis<br>(Quota Manager)]
-            M[Monitoring Stack<br>(Prometheus, Grafana)]
-            S[Storage<br>(MinIO for Delta Lake)]
+            R["Redis<br>(Quota Manager)"]
+            M["Monitoring Stack<br>(Prometheus, Grafana)"]
+            S["Storage<br>(MinIO for Delta Lake)"]
         end
     end
     
@@ -191,15 +202,15 @@ graph LR
 
 | 文档名称 | 描述 |
 | :--- | :--- |
-| [`system_design.md`](./system_design.md) | **系统架构设计**：描述了系统的核心架构理念、组件和数据流。 |
-| [`data_governance_and_dictionary.md`](./data_governance_and_dictionary.md) | **数据治理规范与字典**：定义了数据治理原则和Gold层数据字典。 |
-| [`quality_kpi.md`](./quality_kpi.md) | **数据质量体系设计**：定义了质量KPI、评分模型和分层质量门禁。 |
-| [`tushare_pro_integration_design.md`](./tushare_pro_integration_design.md) | **Tushare集成设计**：详细阐述了Tushare的接入、配额管理和容灾设计。 |
-| [`plan.md`](./plan.md) | **项目计划书**：包含了项目的实施计划、里程碑和资源安排。 |
-| [`requirements_traceability_matrix.md`](./requirements_traceability_matrix.md) | **需求追溯矩阵**：将所有需求与设计、开发、测试任务关联。 |
-| [`user_story.md`](./user_story.md) | **用户故事全集**：从不同角色视角描述了项目的功能和价值。 |
-| [`backlog.md`](./backlog.md) | **项目待办事项看板**：以看板形式可视化了详细的开发任务和依赖。 |
-| [`risk_register.md`](./risk_register.md) | **风险登记册**：全面识别、评估并规划了项目中的所有潜在风险。 |
+| [`system_design.md`](./doc/system_design.md) | **系统架构设计**：描述了系统的核心架构理念、组件和数据流。 |
+| [`data_governance_and_dictionary.md`](./doc/data_governance_and_dictionary.md) | **数据治理规范与字典**：定义了数据治理原则和Gold层数据字典。 |
+| [`quality_kpi.md`](./doc/quality_kpi.md) | **数据质量体系设计**：定义了质量KPI、评分模型和分层质量门禁。 |
+| [`tushare_pro_integration_design.md`](./doc/tushare_pro_integration_design.md) | **Tushare集成设计**：详细阐述了Tushare的接入、配额管理和容灾设计。 |
+| [`plan.md`](./doc/plan.md) | **项目计划书**：包含了项目的实施计划、里程碑和资源安排。 |
+| [`requirements_traceability_matrix.md`](./doc/requirements_traceability_matrix.md) | **需求追溯矩阵**：将所有需求与设计、开发、测试任务关联。 |
+| [`user_story.md`](./doc/user_story.md) | **用户故事全集**：从不同角色视角描述了项目的功能和价值。 |
+| [`backlog.md`](./doc/backlog.md) | **项目待办事项看板**：以看板形式可视化了详细的开发任务和依赖。 |
+| [`risk_register.md`](./doc/risk_register.md) | **风险登记册**：全面识别、评估并规划了项目中的所有潜在风险。 |
 
 ## 🤝 贡献指南 (Contributing)
 

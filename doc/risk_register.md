@@ -1,7 +1,7 @@
 
 ## 项目风险登记册 (Consolidated Version)
 
-**项目名称:** 面向NautilusTrader的高质量A股数据管道系统（集成Tushare Pro）
+**项目名称:** Project Argus: 天枢计划
 **文档版本:** 2.0 (整合最终版)
 **编制人:** 资深项目经理 (PM)
 **日期:** 2023-10-30
@@ -65,9 +65,9 @@
 2.  **应急响应流程**
     ```mermaid
     graph LR
-        A[风险事件触发<br>(Prometheus告警)] --> B{是否有预案覆盖?}
-        B -- Yes --> C[执行预设的<br>应急计划 (Reactive Plan)]
-        B -- No --> D[启动应急响应小组(SWAT)]
+        A["风险事件触发<br>(Prometheus告警)"] --> B{是否有预案覆盖?}
+        B -- Yes --> C["执行预设的<br>应急计划 (Reactive Plan)"]
+        B -- No --> D["启动应急响应小组(SWAT)"]
         D --> E[1小时内定级并制定临时方案]
         E --> F[方案快速评审] --> G[授权执行]
     ```

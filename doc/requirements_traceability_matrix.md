@@ -4,7 +4,7 @@
 
 ## 需求矩阵文档 (Requirements Traceability Matrix)
 
-**项目名称:** 面向NautilusTrader的高质量A股数据管道系统（集成Tushare Pro）
+**项目名称:** Project Argus: 天枢计划
 **文档版本:** V1.1
 **编制人:** 项目经理 (PM)
 **日期:** 2023-10-28
