@@ -113,6 +113,8 @@ with DAG(
     collect_qmt_data_task = PythonOperator(
         task_id="collect_ashare_daily_and_minute_kline",
         python_callable=run_qmt_collection_for_previous_trading_day,
+        retries=3,  # 添加任务级别重试机制
+        retry_delay=datetime.timedelta(minutes=5),
         # provide_context=True, # if you need access to {{ ds }}, {{ execution_date }} etc.
                                # but here we calculate T-1 based on physical date.
     )

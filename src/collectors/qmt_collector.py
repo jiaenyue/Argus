@@ -138,14 +138,30 @@ def download_historical_data(
 
             logger.info(f"Download call completed for {len(stock_list)} stocks, period {period}.")
             return True
-        except Exception as e:
-            logger.error(f"Exception during download call for {stock_list[0]} (and others), period {period} "
+        except (OSError, TimeoutError) as e:
+            logger.error(f"Network exception during download call for {stock_list[0]} (and others), period {period} "
                          f"(attempt {attempt + 1}): {e}", exc_info=True)
             if attempt < max_retries - 1:
                 logger.info(f"Retrying in {retry_delay_seconds} seconds...")
                 time.sleep(retry_delay_seconds)
             else:
-                logger.error(f"Failed to initiate download for {stock_list[0]} (and others), period {period} after {max_retries} attempts.")
+                logger.error(f"Failed to initiate download for {stock_list[0]} (and others), period {period} after {max_retries} attempts due to network issues.")
+                return False
+        except Exception as e:
+            logger.error(f"Non-network exception during download call for {stock_list[0]} (and others), period {period} (attempt {attempt + 1}): {e}", exc_info=True)
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay_seconds} seconds...")
+                time.sleep(retry_delay_seconds)
+            else:
+                logger.error(f"Failed to initiate download for {stock_list[0]} (and others), period {period} after {max_retries} attempts due to non-network issues.")
+                return False
+        except Exception as e:
+            logger.error(f"Non-network exception during download call for {stock_list[0]} (and others), period {period} (attempt {attempt + 1}): {e}", exc_info=True)
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay_seconds} seconds...")
+                time.sleep(retry_delay_seconds)
+            else:
+                logger.error(f"Failed to initiate download for {stock_list[0]} (and others), period {period} after {max_retries} attempts due to non-network issues.")
                 return False
     return False # Should not be reached if max_retries > 0
 
