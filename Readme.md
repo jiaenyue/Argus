@@ -141,13 +141,13 @@ graph TD
 graph LR
     subgraph Docker Host
         subgraph "Docker Compose Services"
-            A[Airflow<br>(Scheduler, Webserver)]
-            C[Data Collector<br>(as Airflow Task)]
-            P[Data Processor<br>(as Airflow Task)]
+            A["Airflow<br>(Scheduler, Webserver)"]
+            C["Data Collector<br>(as Airflow Task)"]
+            P["Data Processor<br>(as Airflow Task)"]
             K[Kafka & Zookeeper]
-            R[Redis<br>(Quota Manager)]
-            M[Monitoring Stack<br>(Prometheus, Grafana)]
-            S[Storage<br>(MinIO for Delta Lake)]
+            R["Redis<br>(Quota Manager)"]
+            M["Monitoring Stack<br>(Prometheus, Grafana)"]
+            S["Storage<br>(MinIO for Delta Lake)"]
         end
     end
     
