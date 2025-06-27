@@ -91,10 +91,21 @@ graph TD
 
     %% Quality & Observability Flow
     SP -- "待验数据" --> GE -- "验证结果" --> QDE
-    subgraph "全链路指标/日志"
-        direction LR
-        DC & BP & SP & GE
-    end --> PROM & ELK --> GRA
+
+    %% Metrics and logs from components flow to Prometheus and ELK Stack
+    DC --> PROM
+    BP --> PROM
+    SP --> PROM
+    GE --> PROM
+
+    DC --> ELK
+    BP --> ELK
+    SP --> ELK
+    GE --> ELK
+
+    %% Prometheus and ELK Stack feed data to Grafana for visualization
+    PROM --> GRA
+    ELK --> GRA
     
     GRA -- "看板" --> USER
 ```
