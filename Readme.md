@@ -118,7 +118,7 @@ graph TD
 | **消息总线** | `Apache Kafka` | 作为事件驱动核心，解耦系统各组件。 |
 | **工作流调度** | `Apache Airflow` | 自动化、可编程的工作流调度与监控。 |
 | **数据质量** | `Great Expectations` | 声明式的数据质量断言、文档生成和报告。 |
-| **数据处理** | `Python`, `Pandas`, `PyArrow`, `Prophet` | 高效的数据清洗、转换、融合与预测。 |
+| **数据处理** | `Python 3.12`, `uv`, `Pandas`, `PyArrow`, `Prophet` | 高效的数据清洗、转换、融合与预测。 `uv` 用于包管理。 |
 | **监控与告警** | `Prometheus`, `Grafana`, `Alertmanager`, `ELK` | 全链路的指标采集、可视化、告警和日志管理。 |
 | **安全与配置**| `Docker Secrets`, `.env files`, `Consul` | 安全的凭证管理与动态的外部配置中心。 |
 
@@ -166,23 +166,83 @@ graph LR
 ## 🚀 快速开始 (Quick Start)
 
 ### 先决条件
+*   Python 3.12
+*   [uv](https://github.com/astral-sh/uv) (Python package manager)
 *   [Docker](https://www.docker.com/get-started)
 *   [Docker Compose](https://docs.docker.com/compose/install/)
+*   Access to a running miniQMT instance (for data collection)
 
-### 安装与启动
+### 本地开发环境设置 (无 Docker)
+
+如果您希望在本地（非 Dockerized）环境中运行或开发部分组件（如数据采集脚本），可以按以下步骤操作：
+
 1.  **克隆仓库**
     ```bash
     git clone https://github.com/your-org/project-argus.git
     cd project-argus
     ```
 
-2.  **配置环境变量**
-    复制示例环境文件，并填入您的Tushare Pro API Token。
+2.  **安装 uv**
+    如果尚未安装 `uv`, 请参照其[官方文档](https://github.com/astral-sh/uv)进行安装。例如：
+    ```bash
+    # Piped install (macOS, Linux)
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # Or using pip (if you have a global Python with pip)
+    # pip install uv
+    ```
+
+3.  **创建并激活虚拟环境 (使用 uv)**
+    ```bash
+    uv venv .venv  # 创建虚拟环境到 .venv 目录
+    source .venv/bin/activate  # 激活 (Linux/macOS)
+    # .venv\Scripts\activate  # 激活 (Windows)
+    ```
+    项目使用 Python 3.12。请确保您的 `uv` 配置或系统 Python 指向 3.12 版本，或者在创建虚拟环境时指定：
+    ```bash
+    uv venv .venv -p 3.12
+    ```
+
+4.  **安装依赖 (使用 uv)**
+    ```bash
+    uv pip install -r requirements.txt
+    ```
+    或者，如果您的 `uv` 版本支持直接从 `pyproject.toml` 安装：
+    ```bash
+    # uv pip install .  # This would install the project and its dependencies
+    ```
+    **注意**: `xtquant` 库是 miniQMT 的一部分，通常需要从 QMT 客户端的安装目录中获取或通过特定方式安装到您的 Python 环境中。它不会通过 `requirements.txt` 从 PyPI 安装。确保 `xtquant` 在您的 Python 环境中可用才能运行数据采集脚本。
+
+5.  **配置环境变量**
+    复制示例环境文件，并填入您的 API Token 等敏感信息。
     ```bash
     cp .env.example .env
-    # 编辑 .env 文件，设置 TUSHARE_TOKEN
+    # 编辑 .env 文件，例如:
     # TUSHARE_TOKEN=your_tushare_pro_api_token
+    # QMT_CLIENT_PATH=/path/to/your/qmt/installation (if needed by scripts)
     ```
+
+6.  **运行特定脚本 (示例)**
+    此时，您可以直接运行项目中的 Python 脚本，例如测试数据采集器：
+    ```bash
+    python src/collectors/qmt_collector.py
+    ```
+
+### Dockerized 系统启动 (完整系统)
+
+对于完整的系统部署（包括 Airflow, Kafka, MinIO 等），请遵循以下 Docker Compose 流程：
+
+1.  **克隆仓库** (如果尚未操作)
+    ```bash
+    git clone https://github.com/your-org/project-argus.git
+    cd project-argus
+    ```
+
+2.  **配置环境变量** (同上, 主要是 `.env` 文件中的 `TUSHARE_TOKEN`)
+    ```bash
+    cp .env.example .env
+    # 编辑 .env 文件
+    ```
+    Docker Compose 构建过程将使用 `requirements.txt` (通过 `uv` 安装) 和 Python 3.12 基础镜像。
 
 3.  **启动系统**
     使用 Docker Compose 一键启动所有服务。

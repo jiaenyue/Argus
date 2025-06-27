@@ -1,0 +1,13 @@
+# This file is intended to be generated from pyproject.toml using a tool like 'uv pip compile'.
+# For example: uv pip compile pyproject.toml -o requirements.txt
+# Manually listing core dependencies here for environments that use requirements.txt directly.
+
+pandas>=1.5,<3.0
+pyarrow>=10.0,<16.0
+
+# Note: xtquant is a special dependency provided by the miniQMT environment.
+# It should be installed separately or be part of the base Docker image if containerizing.
+
+# Airflow and its provider dependencies are typically managed by the Airflow Docker image
+# or installation method and are not listed here if this requirements.txt is solely for the collector's own code.
+# If this project directly managed an Airflow installation from scratch, they would be included in pyproject.toml.

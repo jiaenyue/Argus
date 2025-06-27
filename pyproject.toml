@@ -1,0 +1,30 @@
+[project]
+name = "project-argus"
+version = "0.1.0"
+description = "An industrial-grade, automated, high-resilience A-share data pipeline system."
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=1.5,<3.0",    # For data manipulation
+    "pyarrow>=10.0,<16.0", # For Parquet file support
+    # xtquant is provided by the QMT environment, not installed via pip from PyPI.
+    # Ensure it's available in the execution environment (e.g., Docker container).
+    # Airflow dependencies are managed separately by the Airflow setup/image.
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+# Future uv specific configurations could go here
+# For now, dependencies are managed under [project].dependencies
+
+[tool.hatch.version]
+path = "src/project_argus/__init__.py" # Assuming we might create this for versioning
+
+# Placeholder for a potential __init__.py if we structure 'src' as a package 'project_argus'
+# If src/collectors is directly imported, this might not be strictly necessary
+# but good for standard project structure.
+# For now, this file (src/project_argus/__init__.py) won't be created by me
+# unless the project structure implies it more strongly.
+# The current DAG imports from src.collectors directly.
