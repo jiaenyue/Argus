@@ -1,4 +1,6 @@
 
+# Project Argus: 天枢计划
+
 ## 整合版项目待办事项看板 (Final Consolidated Backlog Kanban)
 
 ### 1. 看板概览与依赖关系 (Visual Overview)
@@ -214,6 +216,6 @@ graph LR
        
        section 平台团队 (DevOps/Platform)
        Vault凭证部署    :crit, 2023-11-01, 2d
-       Kafka & Redis部署 :2023-11-01, 3d
+       "Kafka & Redis部署" :2023-11-01, 3d
        Delta Lake环境  :2023-11-06, 3d
     ```

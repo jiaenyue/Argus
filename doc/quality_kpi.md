@@ -1,7 +1,7 @@
 
 ## 整合版数据质量体系设计文档 (质量KPI文档)
 
-**项目名称:** 面向NautilusTrader的高质量A股数据管道系统（集成Tushare Pro）
+**项目名称:** Project Argus: 天枢计划
 **文档版本:** 2.0 (整合最终版)
 **编制人:** 数据质量专家 (DQA)
 **日期:** 2023-10-28
@@ -29,19 +29,19 @@
 ```mermaid
 graph TD
     subgraph "数据生命周期"
-        A[L0: 采集层] --> B[L1: 处理层 (Bronze)]
-        B --> C[L2: 融合层 (Silver)]
-        C --> D[L3: 存储层 (Gold)]
-        D --> E[L4: 应用层 (Consumption)]
+        A["L0: 采集层"] --> B["L1: 处理层 (Bronze)"]
+        B --> C["L2: 融合层 (Silver)"]
+        C --> D["L3: 存储层 (Gold)"]
+        D --> E["L4: 应用层 (Consumption)"]
     end
 
     subgraph "质量监控维度与工具链"
         %% Links from layers to dimensions
         A -- "API成功率, 配额健康度" --> M1[Prometheus]
         B -- "格式/结构校验, 异常值检测" --> M2[Great Expectations]
-        C -- "多源一致性, 业务逻辑校验" --> M3[GE + 自定义校验器]
+        C -- "多源一致性, 业务逻辑校验" --> M3["GE + 自定义校验器"]
         D -- "Schema合规, 事务完整性" --> M4[Delta Lake审计]
-        E -- "回测稳定性, 加载性能" --> M5[Nautilus回测日志/Metrics]
+        E -- "回测稳定性, 加载性能" --> M5["Nautilus回测日志/Metrics"]
     end
 
     style A fill:#cce5ff,stroke:#367dcc
@@ -138,13 +138,13 @@ QDE是质量体系的大脑，它执行质量门禁并根据结果和策略进�
 graph TD
     A[执行质量门禁] --> B{规则是否失败?}
     B -->|否| C[数据通过, 流转至下一层]
-    B -->|是| D{是否核心字段/规则?}
+    B -->|是| D{"是否核心字段/规则?"}
     D -->|否| E[记录警告日志, 数据通过]
     D -->|是| F{是否可自动修复?}
     F -->|是| G[执行自动修复任务]
     G --> H{修复成功?}
     H -->|是| C
-    H -->|否| I[隔离数据 + P1/P0告警]
+    H -->|否| I["隔离数据 + P1/P0告警"]
     F -->|否| I
 ```
 
@@ -202,10 +202,10 @@ def get_dynamic_consistency_threshold(market_volatility_index: float) -> float:
 ```mermaid
 graph TD
     subgraph "Plan & Do"
-        A[1. 监控与发现: 发现质量问题] --> B[2. 分析与定位: 分析根本原因]
+        A["1. 监控与发现: 发现质量问题"] --> B["2. 分析与定位: 分析根本原因"]
     end
     subgraph "Check & Act"
-        B --> C[3. 优化与迭代: 优化规则/代码/流程] --> D[4. 发布与验证: 部署新版本]
+        B --> C["3. 优化与迭代: 优化规则/代码/流程"] --> D["4. 发布与验证: 部署新版本"]
     end
     D --> |季度评审与复盘| A
 ```
