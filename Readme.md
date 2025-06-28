@@ -27,86 +27,103 @@
 
 ```mermaid
 graph TD
-    subgraph "数据平面 (Data Plane)"
-        %% Data Sources
-        subgraph "A. 数据源 (Sources)"
-            DS1[fa:fas fa-server miniQMT]
-            DS2[fa:fas fa-cloud Tushare Pro]
-        end
-
-        %% Ingestion
-        subgraph "B. 统一接入与采集 (Ingestion)"
-            GW[fa:fas fa-door-open API Gateway]
-            DC[fa:fas fa-satellite-dish 智能数据采集器]
-        end
-
-        %% Buffering
-        subgraph "C. 消息总线 (Message Bus)"
-            KAFKA[fa:fas fa-stream Kafka<br><i>raw_data_topic</i>]
-        end
-
-        %% Processing
-        subgraph "D. 数据处理引擎 (Processing Engine)"
-            BP[Bronze Processor<br><i>格式化/标准化</i>]
-            SP[Silver Processor<br><i>融合/清洗/填补</i>]
-            GP[Gold Publisher<br><i>发布到Delta Lake</i>]
-        end
-
-        %% Storage
-        subgraph "E. 事务性数据湖仓 (Transactional Lakehouse)"
-            DL[fa:fas fa-gem Delta Lake<br><i>Gold Layer</i>]
-            PART[fa:fas fa-folder-tree Partitioned Storage<br><i>/gold/date=.../symbol=...</i>]
-        end
-
-        %% Consumption
-        subgraph "F. 数据消费 (Consumption)"
-            NT[fa:fas fa-robot NautilusTrader]
-        end
+    subgraph "Windows 环境 (Windows Environment)"
+        direction LR
+        WIN_QMT["miniQMT Client"]
+        WIN_AGENT["Windows QMT Data Agent - Python HTTP Service"]
+        WIN_QMT --> WIN_AGENT
     end
 
-    subgraph "控制平面 (Control Plane)"
-        AIRFLOW[fa:fas fa-cogs Apache Airflow]
-        CONFIG[fa:fas fa-cog 配置中心]
-        ALERT[fa:fas fa-bell Alertmanager]
-        USER[fa:fas fa-user-tie Data Analyst/Operator]
-    end
+    subgraph "Docker 环境 (Docker Environment - Project Argus Core)"
+        subgraph "数据平面 (Data Plane)"
+            subgraph "A. 数据源 (Sources)"
+                DS_AGENT["QMT Data via Agent"]
+                style DS_AGENT fill:#D2B4DE,stroke:#8E44AD
+                DS2["Tushare Pro"]
+            end
 
-    subgraph "质量与监控平面 (Quality & Observability Plane)"
-        QDE[fa:fas fa-balance-scale 质量决策引擎]
-        GE[fa:fas fa-check-square Great Expectations]
-        PROM[fa:fas fa-chart-line Prometheus]
-        GRA[fa:fas fa-tachometer-alt Grafana]
-        ELK[fa:fas fa-search ELK Stack]
+            subgraph "B. 统一接入与采集 (Ingestion)"
+                DC["智能数据采集器 (qmt_collector.py calls Agent)"]
+            end
+
+            subgraph "C. 消息总线 (Message Bus)"
+                KAFKA["Kafka - raw_data_topic"]
+            end
+
+            subgraph "D. 数据处理引擎 (Processing Engine)"
+                BP["Bronze Processor - 格式化/标准化"]
+                SP["Silver Processor - 融合/清洗/填补"]
+                GP["Gold Publisher - 发布到 Delta Lake"]
+            end
+
+            subgraph "E. 事务性数据湖仓 (Transactional Lakehouse)"
+                DL["Delta Lake - Gold Layer"]
+                PART["Partitioned Storage - /gold/date=.../symbol=..."]
+            end
+
+            subgraph "F. 数据消费 (Consumption)"
+                NT["NautilusTrader"]
+            end
+        end
+
+        subgraph "控制平面 (Control Plane)"
+            AIRFLOW["Apache Airflow"]
+            CONFIG["配置中心"]
+            ALERT["Alertmanager"]
+            USER["Data Analyst / Operator"]
+        end
+
+        subgraph "质量与监控平面 (Quality & Observability Plane)"
+            QDE["质量决策引擎"]
+            GE["Great Expectations"]
+            PROM["Prometheus"]
+            GRA["Grafana"]
+            ELK["ELK Stack"]
+        end
     end
 
     %% Data Flow
-    DS1 & DS2 --> GW --> DC --> KAFKA --> BP --> SP --> QDE
-    QDE -- "✅ 通过" --> GP --> DL --> PART --> NT
+    WIN_AGENT -->|HTTP Request/Response| DC
+    DS2 --> DC
+    DC --> KAFKA
+    KAFKA --> BP
+    BP --> SP
+    SP --> QDE
+    QDE -->|Pass| GP
+    GP --> DL
+    DL --> PART
+    PART --> NT
 
     %% Control Flow
-    AIRFLOW -- "调度" --> DC & BP
-    CONFIG -- "提供规则" --> DC & SP & QDE
-    QDE -- "❌ 失败" --> ALERT -- "告警" --> USER
+    AIRFLOW -->|调度| DC
+    AIRFLOW -->|调度| BP
+    CONFIG -->|提供规则| DC
+    CONFIG -->|提供规则| SP
+    CONFIG -->|提供规则| QDE
+    CONFIG -->|Agent URL| DC
+    QDE -->|Fail| ALERT
+    ALERT -->|告警| USER
 
     %% Quality & Observability Flow
-    SP -- "待验数据" --> GE -- "验证结果" --> QDE
-
-    %% Metrics and logs from components flow to Prometheus and ELK Stack
+    SP -->|待验数据| GE
+    GE -->|验证结果| QDE
     DC --> PROM
-    BP --> PROM
-    SP --> PROM
-    GE --> PROM
-
     DC --> ELK
+    BP --> PROM
     BP --> ELK
+    SP --> PROM
     SP --> ELK
+    GE --> PROM
     GE --> ELK
-
-    %% Prometheus and ELK Stack feed data to Grafana for visualization
+    WIN_AGENT -->|Logs & Metrics| ELK
+    WIN_AGENT -->|Logs & Metrics| PROM
     PROM --> GRA
     ELK --> GRA
-    
-    GRA -- "看板" --> USER
+    GRA -->|看板| USER
+
+    %% Styling
+    class WIN_QMT,WIN_AGENT fill:#EAEFF3,stroke:#5D6D7E
+
 ```
 
 ## 🛠️ 技术栈 (Technology Stack)
@@ -114,6 +131,7 @@ graph TD
 | 类别 | 技术 | 描述 |
 | :--- | :--- | :--- |
 | **部署与运行** | `Docker`, `Docker Compose` | 通过容器化实现环境一致性，支持一键部署和管理。 |
+| **Windows数据代理** | `Python (http.server)`, `xtquantai` ( leveraging `server_direct.py`) | 在Windows上运行，提供对本地miniQMT的HTTP访问接口。其原始项目 `xtquantai` 还支持MCP协议，可用于AI集成。 |
 | **数据湖仓** | `Delta Lake`, `Apache Parquet` | 提供事务性、高性能的列式存储。 |
 | **消息总线** | `Apache Kafka` | 作为事件驱动核心，解耦系统各组件。 |
 | **工作流调度** | `Apache Airflow` | 自动化、可编程的工作流调度与监控。 |
@@ -166,15 +184,33 @@ graph LR
 ## 🚀 快速开始 (Quick Start)
 
 ### 先决条件
-*   Python 3.12
+*   Python 3.12 (for Project Argus core)
 *   [uv](https://github.com/astral-sh/uv) (Python package manager)
 *   [Docker](https://www.docker.com/get-started)
 *   [Docker Compose](https://docs.docker.com/compose/install/)
-*   Access to a running miniQMT instance (for data collection)
+*   **Windows QMT Data Agent 已成功部署和运行:**
+    *   Project Argus 通过HTTP(S)依赖一个独立部署的 `Windows QMT Data Agent` 服务来接入 miniQMT 数据。
+    *   请参照 `project-argus-qmt-agent` 项目的文档进行安装、配置和启动：[https://github.com/jiaenyue/project-argus-qmt-agent](https://github.com/jiaenyue/project-argus-qmt-agent)
+    *   确保该Agent服务正在运行，并且Project Argus环境可以网络访问到它。
+*   (可选，未来AI集成) 如果您计划探索 `xtquantai` 的MCP特性，可能需要Node.js 和 npx (请参考`project-argus-qmt-agent`或`xtquantai`的文档)。
 
-### 本地开发环境设置 (无 Docker)
+### Windows QMT Data Agent Setup
 
-如果您希望在本地（非 Dockerized）环境中运行或开发部分组件（如数据采集脚本），可以按以下步骤操作：
+`Windows QMT Data Agent` 是一个独立的项目，负责提供对 Windows 端 miniQMT 服务的HTTP访问接口。Project Argus 的数据采集器 (`qmt_collector.py`) 将通过网络调用此代理服务。
+
+**请访问并遵循其专用仓库中的说明进行设置和启动：**
+➡️ **[https://github.com/jiaenyue/project-argus-qmt-agent](https://github.com/jiaenyue/project-argus-qmt-agent)**
+
+该仓库的 `README.md` 包含了详细的安装、配置（包括通过环境变量 `QMT_DATA_AGENT_PORT` 设置端口）、运行说明以及如何将其注册为Windows服务以实现持久化运行。
+
+**Project Argus 与 Agent 的交互:**
+
+*   Project Argus 的 `qmt_collector.py` 通过配置的环境变量 `QMT_DATA_AGENT_HOST` 和 `QMT_DATA_AGENT_PORT` 来定位并连接到已运行的 `Windows QMT Data Agent` 实例。
+*   `Windows QMT Data Agent` 项目本身基于 `xtquantai`，也保留了其作为MCP服务器的潜力，可供未来AI集成探索。
+
+### 本地开发环境设置 (Project Argus Core - 无 Docker)
+
+如果您希望在本地（非 Dockerized）环境中运行或开发 Project Argus 核心组件（例如，测试`qmt_collector.py`与已运行的`Windows QMT Data Agent`的通信），可以按以下步骤操作：
 
 1.  **克隆仓库**
     ```bash
