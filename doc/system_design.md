@@ -14,22 +14,119 @@
 
 #### 2. 整合版系统架构图
 
-
 ```mermaid
 graph TD
-    subgraph "Windows Env"
+    subgraph "Windows 环境 (Windows Environment)"
         direction LR
-        A[Client]
-        B["Agent"]
-        A --> B
+        WIN_QMT[fa:fas fa-desktop miniQMT Client]
+        WIN_AGENT["fa:fas fa-network-wired Windows QMT Data Agent<br>(Python HTTP Service based on xtquantai/server_direct.py)"]
+        WIN_QMT --> WIN_AGENT
     end
 
-    subgraph "Docker Env"
-        direction TD
-        C[Collector]
+    subgraph "Docker 环境 (Docker Environment - Project Argus Core)"
+        %% direction TD removed as per user's fix
+        subgraph "数据平面 (Data Plane)"
+            %% Data Sources (Now includes the Agent as a source)
+            subgraph "A. 数据源 (Sources)"
+                DS_AGENT["fa:fas fa-exchange-alt QMT Data via Agent"]
+                style DS_AGENT fill:#D2B4DE,stroke:#8E44AD
+                DS2[fa:fas fa-cloud Tushare Pro]
+            end
+
+            %% Ingestion
+            subgraph "B. 统一接入与采集 (Ingestion)"
+                %% GW[fa:fas fa-door-open API Gateway] %% Gateway might be less relevant for direct agent call from collector
+                DC[fa:fas fa-satellite-dish 智能数据采集器<br>(qmt_collector.py calls Agent & Tushare)]
+            end
+
+            %% Buffering
+            subgraph "C. 消息总线 (Message Bus)"
+                KAFKA[fa:fas fa-stream Kafka<br><i>raw_qmt_data_topic</i><br><i>raw_tushare_data_topic</i>]
+            end
+
+            %% Processing
+            subgraph "D. 数据处理引擎 (Processing Engine)"
+                BP[Bronze Processor<br><i>格式化/标准化</i>]
+                SP[Silver Processor<br><i>融合/清洗/填补</i>]
+                GP[Gold Publisher<br><i>发布到Delta Lake</i>]
+            end
+
+            %% Storage
+            subgraph "E. 事务性数据湖仓 (Transactional Lakehouse)"
+                DL[fa:fas fa-gem Delta Lake<br><i>Gold Layer</i>]
+                PART[fa:fas fa-folder-tree Partitioned Storage<br><i>/gold/date=.../symbol=...</i>]
+            end
+
+            %% Consumption
+            subgraph "F. 数据消费 (Consumption)"
+                NT[fa:fas fa-robot NautilusTrader]
+            end
+        end
+
+        subgraph "控制平面 (Control Plane)"
+            AIRFLOW[fa:fas fa-cogs Apache Airflow]
+            CONFIG[fa:fas fa-cog 配置中心<br>(Agent URL, Tushare Token, Fusion Rules)]
+            ALERT[fa:fas fa-bell Alertmanager]
+            USER[fa:fas fa-user-tie Data Analyst/Operator]
+        end
+
+        subgraph "质量与监控平面 (Quality & Observability Plane)"
+            QDE[fa:fas fa-balance-scale 质量决策引擎]
+            GE[fa:fas fa-check-square Great Expectations]
+            PROM[fa:fas fa-chart-line Prometheus]
+            GRA[fa:fas fa-tachometer-alt Grafana]
+            ELK[fa:fas fa-search ELK Stack]
+        end
     end
 
-    B -- "HTTP" --> C
+    %% Data Flow
+    WIN_AGENT -- "HTTP Request/Response for QMT Data" --> DC
+    DS2       -- "API Call for Tushare Data" --> DC
+    DC        -- "QMT Raw Data" --> KAFKA
+    DC        -- "Tushare Raw Data" --> KAFKA
+    KAFKA     --> BP
+    BP        --> SP
+    SP        --> QDE
+    QDE       -- "✅ 通过" --> GP
+    GP        --> DL
+    DL        --> PART
+    PART      --> NT
+
+    %% Control Flow
+    CONFIG    -- "提供规则/配置" --> DC
+    CONFIG    -- "提供规则/配置" --> SP
+    CONFIG    -- "提供规则/配置" --> QDE
+    AIRFLOW   -- "1. 调度采集 (DC)" --> DC
+    AIRFLOW   -- "3. 调度处理 (BP, SP, GP)" --> BP
+    QDE       -- "❌ 失败" --> ALERT
+    ALERT     -- "告警" --> USER
+    ALERT     -- "触发修复 (Optional)" --> AIRFLOW
+
+    %% Quality & Observability Flow
+    SP        -- "2. 待验数据" --> GE
+    GE        -- "验证结果" --> QDE
+    DC        -- "指标/日志" --> PROM
+    DC        -- "指标/日志" --> ELK
+    WIN_AGENT -- "指标/日志 (Optional)" --> PROM
+    WIN_AGENT -- "指标/日志 (Optional)" --> ELK
+    BP        -- "指标/日志" --> PROM
+    BP        -- "指标/日志" --> ELK
+    SP        -- "指标/日志" --> PROM
+    SP        -- "指标/日志" --> ELK
+    GE        -- "质量指标" --> PROM
+    PROM      -- "数据源" --> GRA
+    ELK       -- "数据源" --> GRA
+    GRA       -- "看板" --> USER
+
+    %% Styling
+    classDef dataPlane fill:#e6f3ff,stroke:#367dcc,stroke-width:1px,color:#000
+    classDef controlPlane fill:#f5e6ff,stroke:#8e44ad,stroke-width:1px,color:#000
+    classDef qualityPlane fill:#e6ffe6,stroke:#27ae60,stroke-width:1px,color:#000
+    classDef windowsEnv fill:#EAEFF3,stroke:#5D6D7E,color:#000
+    class A,B,C,D,E,F dataPlane
+    class AIRFLOW,CONFIG,ALERT,USER controlPlane
+    class QDE,GE,PROM,GRA,ELK qualityPlane
+    class WIN_QMT,WIN_AGENT windowsEnv
 ```
 
 #### 3. 核心组件详解

@@ -35,7 +35,7 @@ graph TD
     end ;; <!-- Correctly closing the first subgraph -->
 
     subgraph "Docker 环境 (Docker Environment - Project Argus Core)"
-        direction TD
+        %% direction TD removed as per user's fix
         subgraph "数据平面 (Data Plane)"
             %% Data Sources (Now includes the Agent as a source)
             subgraph "A. 数据源 (Sources)"
