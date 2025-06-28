@@ -32,7 +32,7 @@ graph TD
         WIN_QMT[fa:fas fa-desktop miniQMT Client]
         WIN_AGENT["fa:fas fa-network-wired Windows QMT Data Agent<br>(Python HTTP Service based on xtquantai/server_direct.py)"]
         WIN_QMT --> WIN_AGENT
-    end
+    end ;; <!-- Correctly closing the first subgraph -->
 
     subgraph "Docker 环境 (Docker Environment - Project Argus Core)"
         direction TD
