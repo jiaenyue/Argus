@@ -19,7 +19,7 @@ graph TD
     subgraph "Windows 环境 (Windows Environment)"
         direction LR
         WIN_QMT[fa:fas fa-desktop miniQMT Client]
-        WIN_AGENT[fa:fas fa-network-wired Windows QMT Data Agent<br>(Python HTTP Service based on xtquantai/server_direct.py)]
+        WIN_AGENT["fa:fas fa-network-wired Windows QMT Data Agent<br>(Python HTTP Service based on xtquantai/server_direct.py)"]
         WIN_QMT --> WIN_AGENT
     end
 
