@@ -14,6 +14,7 @@
 
 #### 2. 整合版系统架构图
 
+
 ```mermaid
 graph TD
     subgraph "Windows 环境 (Windows Environment)"
