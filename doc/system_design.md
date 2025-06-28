@@ -16,7 +16,6 @@
 
 ```mermaid
 graph TD
-graph TD
     subgraph "Windows 环境 (Windows Environment)"
         direction LR
         WIN_QMT[fa:fas fa-desktop miniQMT Client]
