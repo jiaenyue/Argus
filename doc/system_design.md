@@ -16,112 +16,138 @@
 
 ```mermaid
 graph TD
-    subgraph "数据平面 (Data Plane)"
-        %% Data Sources
-        subgraph "A. 数据源 (Sources)"
-            DS1[fa:fas fa-server miniQMT]
-            DS2[fa:fas fa-cloud Tushare Pro]
-        end
-
-        %% Ingestion
-        subgraph "B. 统一接入与采集 (Ingestion)"
-            GW[fa:fas fa-door-open API Gateway]
-            DC[fa:fas fa-satellite-dish 智能数据采集器]
-        end
-
-        %% Buffering
-        subgraph "C. 消息总线 (Message Bus)"
-            KAFKA["fa:fas fa-stream Kafka<br><i>raw_data_topic</i>"]
-        end
-
-        %% Processing
-        subgraph "D. 数据处理引擎 (Processing Engine)"
-            BP["Bronze Processor<br><i>格式化/标准化</i>"]
-            SP["Silver Processor<br><i>融合/清洗/填补</i>"]
-            GP["Gold Publisher<br><i>发布到Delta Lake</i>"]
-        end
-
-        %% Storage
-        subgraph "E. 事务性数据湖仓 (Transactional Lakehouse)"
-            DL["fa:fas fa-gem Delta Lake<br><i>Gold Layer</i>"]
-            PART["fa:fas fa-folder-tree Partitioned Storage<br><i>/gold/date=.../symbol=...</i>"]
-        end
-
-        %% Consumption
-        subgraph "F. 数据消费 (Consumption)"
-            NT[fa:fas fa-robot NautilusTrader]
-        end
+graph TD
+    subgraph "Windows 环境 (Windows Environment)"
+        direction LR
+        WIN_QMT[fa:fas fa-desktop miniQMT Client]
+        WIN_AGENT[fa:fas fa-network-wired Windows QMT Data Agent<br>(Python HTTP Service based on xtquantai/server_direct.py)]
+        WIN_QMT --> WIN_AGENT
     end
 
-    subgraph "控制平面 (Control Plane)"
-        AIRFLOW[fa:fas fa-cogs Apache Airflow]
-        CONFIG[fa:fas fa-cog 配置中心]
-        ALERT[fa:fas fa-bell Alertmanager]
-        USER[fa:fas fa-user-tie Data Analyst/Operator]
-    end
+    subgraph "Docker 环境 (Docker Environment - Project Argus Core)"
+        direction TD
+        subgraph "数据平面 (Data Plane)"
+            %% Data Sources (Now includes the Agent as a source)
+            subgraph "A. 数据源 (Sources)"
+                DS_AGENT["fa:fas fa-exchange-alt QMT Data via Agent"]
+                style DS_AGENT fill:#D2B4DE,stroke:#8E44AD
+                DS2[fa:fas fa-cloud Tushare Pro]
+            end
 
-    subgraph "质量与监控平面 (Quality & Observability Plane)"
-        QDE[fa:fas fa-balance-scale 质量决策引擎]
-        GE[fa:fas fa-check-square Great Expectations]
-        PROM[fa:fas fa-chart-line Prometheus]
-        GRA[fa:fas fa-tachometer-alt Grafana]
-        ELK[fa:fas fa-search ELK Stack]
+            %% Ingestion
+            subgraph "B. 统一接入与采集 (Ingestion)"
+                %% GW[fa:fas fa-door-open API Gateway] %% Gateway might be less relevant for direct agent call from collector
+                DC[fa:fas fa-satellite-dish 智能数据采集器<br>(qmt_collector.py calls Agent & Tushare)]
+            end
+
+            %% Buffering
+            subgraph "C. 消息总线 (Message Bus)"
+                KAFKA[fa:fas fa-stream Kafka<br><i>raw_qmt_data_topic</i><br><i>raw_tushare_data_topic</i>]
+            end
+
+            %% Processing
+            subgraph "D. 数据处理引擎 (Processing Engine)"
+                BP[Bronze Processor<br><i>格式化/标准化</i>]
+                SP[Silver Processor<br><i>融合/清洗/填补</i>]
+                GP[Gold Publisher<br><i>发布到Delta Lake</i>]
+            end
+
+            %% Storage
+            subgraph "E. 事务性数据湖仓 (Transactional Lakehouse)"
+                DL[fa:fas fa-gem Delta Lake<br><i>Gold Layer</i>]
+                PART[fa:fas fa-folder-tree Partitioned Storage<br><i>/gold/date=.../symbol=...</i>]
+            end
+
+            %% Consumption
+            subgraph "F. 数据消费 (Consumption)"
+                NT[fa:fas fa-robot NautilusTrader]
+            end
+        end
+
+        subgraph "控制平面 (Control Plane)"
+            AIRFLOW[fa:fas fa-cogs Apache Airflow]
+            CONFIG[fa:fas fa-cog 配置中心<br>(Agent URL, Tushare Token, Fusion Rules)]
+            ALERT[fa:fas fa-bell Alertmanager]
+            USER[fa:fas fa-user-tie Data Analyst/Operator]
+        end
+
+        subgraph "质量与监控平面 (Quality & Observability Plane)"
+            QDE[fa:fas fa-balance-scale 质量决策引擎]
+            GE[fa:fas fa-check-square Great Expectations]
+            PROM[fa:fas fa-chart-line Prometheus]
+            GRA[fa:fas fa-tachometer-alt Grafana]
+            ELK[fa:fas fa-search ELK Stack]
+        end
     end
 
     %% Data Flow
-    DS1 --> GW
-    DS2 --> GW
-    GW --> DC
-    DC --> KAFKA
-    KAFKA --> BP
-    BP --> SP
-    SP --> QDE
-    QDE -- "✅ 通过" --> GP
-    GP --> DL
-    DL --> PART
-    PART --> NT
+    WIN_AGENT -- "HTTP Request/Response for QMT Data" --> DC
+    DS2       -- "API Call for Tushare Data" --> DC
+    DC        -- "QMT Raw Data" --> KAFKA
+    DC        -- "Tushare Raw Data" --> KAFKA
+    KAFKA     --> BP
+    BP        --> SP
+    SP        --> QDE
+    QDE       -- "✅ 通过" --> GP
+    GP        --> DL
+    DL        --> PART
+    PART      --> NT
 
     %% Control Flow
-    CONFIG -- "提供规则" --> DC
-    CONFIG -- "提供规则" --> SP
-    CONFIG -- "提供规则" --> QDE
-    AIRFLOW -- "1. 调度采集" --> DC
-    AIRFLOW -- "3. 调度处理" --> BP
-    QDE -- "❌ 失败" --> ALERT
-    ALERT -- "告警" --> USER
-    ALERT -- "触发修复" --> AIRFLOW
+    CONFIG    -- "提供规则/配置" --> DC
+    CONFIG    -- "提供规则/配置" --> SP
+    CONFIG    -- "提供规则/配置" --> QDE
+    AIRFLOW   -- "1. 调度采集 (DC)" --> DC
+    AIRFLOW   -- "3. 调度处理 (BP, SP, GP)" --> BP
+    QDE       -- "❌ 失败" --> ALERT
+    ALERT     -- "告警" --> USER
+    ALERT     -- "触发修复 (Optional)" --> AIRFLOW
 
     %% Quality & Observability Flow
-    SP -- "2. 待验数据" --> GE
-    GE -- "验证结果" --> QDE
-    DC -- "指标/日志" --> PROM
-    DC -- "指标/日志" --> ELK
-    BP -- "指标/日志" --> PROM
-    BP -- "指标/日志" --> ELK
-    SP -- "指标/日志" --> PROM
-    SP -- "指标/日志" --> ELK
-    GE -- "质量指标" --> PROM
-    PROM -- "数据源" --> GRA
-    ELK -- "数据源" --> GRA
-    GRA -- "看板" --> USER
+    SP        -- "2. 待验数据" --> GE
+    GE        -- "验证结果" --> QDE
+    DC        -- "指标/日志" --> PROM
+    DC        -- "指标/日志" --> ELK
+    WIN_AGENT -- "指标/日志 (Optional)" --> PROM
+    WIN_AGENT -- "指标/日志 (Optional)" --> ELK
+    BP        -- "指标/日志" --> PROM
+    BP        -- "指标/日志" --> ELK
+    SP        -- "指标/日志" --> PROM
+    SP        -- "指标/日志" --> ELK
+    GE        -- "质量指标" --> PROM
+    PROM      -- "数据源" --> GRA
+    ELK       -- "数据源" --> GRA
+    GRA       -- "看板" --> USER
 
     %% Styling
     classDef dataPlane fill:#e6f3ff,stroke:#367dcc,stroke-width:1px,color:#000
     classDef controlPlane fill:#f5e6ff,stroke:#8e44ad,stroke-width:1px,color:#000
     classDef qualityPlane fill:#e6ffe6,stroke:#27ae60,stroke-width:1px,color:#000
+    classDef windowsEnv fill:#EAEFF3,stroke:#5D6D7E,color:#000
     class A,B,C,D,E,F dataPlane
     class AIRFLOW,CONFIG,ALERT,USER controlPlane
     class QDE,GE,PROM,GRA,ELK qualityPlane
+    class WIN_QMT,WIN_AGENT windowsEnv
 ```
 
 #### 3. 核心组件详解
 
 *   **A. 数据源 (Sources):**
-    *   `miniQMT` 和 `Tushare Pro`：职责不变，分别为主要行情源和补充/备份源。
+    *   **Windows QMT Data Agent (独立子项目):**
+        *   **当前角色 (HTTP数据代理):** 这是一个独立部署在Windows环境中的Python HTTP服务，其代码库位于 [https://github.com/jiaenyue/project-argus-qmt-agent](https://github.com/jiaenyue/project-argus-qmt-agent)。该服务基于`xtquantai`项目的`server_direct.py`部分，直接与本地运行的miniQMT客户端交互，并通过HTTP接口向Project Argus核心系统的`智能数据采集器`暴露QMT数据。这是当前Project Argus接入miniQMT数据的方式。
+        *   **未来潜力 (MCP服务器):** `project-argus-qmt-agent`的原始基础`xtquantai`项目本身是一个完整的MCP (Model Context Protocol)服务器，旨在与AI助手（如Cursor）集成。这意味着`project-argus-qmt-agent`未来也可以扩展以支持MCP模式，允许通过自然语言或特定协议指令调用QMT功能，为Project Argus未来扩展AI驱动的数据分析或交易辅助功能提供了基础。详细的MCP功能和设置请参考`xtquantai`的官方文档。
+    *   **QMT Data via Agent:** 在Project Argus架构图中，这代表通过独立部署的`Windows QMT Data Agent`的HTTP接口获取的数据流。
+    *   **Tushare Pro:** 职责不变，作为补充和备份数据源，通过其原生API接入。
 
 *   **B. 统一接入与采集 (Ingestion):**
-    *   **API Gateway:** **[整合点]** 作为所有数据流入的唯一入口，负责统一的认证、限流、熔断降级（如Tushare API错误率超阈值时）和请求路由。
-    *   **智能数据采集器 (Data Collector):** 由Airflow调度，从`配置中心`读取数据源优先级和采集策略。它向`API Gateway`发起请求，并将采集到的原始数据作为事件发送到`Kafka`。**[对应需求: FR-001, FR-002, BR-004]**
+    *   **智能数据采集器 (Data Collector - `qmt_collector.py`):**
+        *   由Airflow调度。
+        *   **QMT数据采集:** 通过HTTP(S)调用部署在Windows环境上的`Windows QMT Data Agent`来获取miniQMT数据。Agent的URL从`配置中心`获取。
+        *   **Tushare数据采集:** 仍然直接通过API调用Tushare Pro。
+        *   采集到的原始数据（来自Agent的QMT数据和来自Tushare的数据）作为事件分别或统一发送到`Kafka`的不同主题或带有不同标识的同一主题。
+        **[对应需求: FR-001 (via Agent), FR-002, BR-004]**
+    *   **API Gateway (可选/未来扩展):** 对于Tushare Pro等云服务的直接调用，未来可以考虑引入API Gateway进行统一管理（认证、限流、路由）。当前对于Windows Agent的内部网络调用，API Gateway的必要性较低。
+
 
 *   **C. 消息总线 (Message Bus):**
     *   **Apache Kafka:** **[核心整合点]** 系统的“解耦层”和“缓冲池”。原始数据被发布到`raw_data_topic`。这带来了巨大好处：
@@ -161,3 +187,4 @@ graph TD
 1.  **Kafka vs. Direct Processing:** 选择Kafka引入了轻微的延迟和运维成本，但换来了无与伦比的系统弹性和可扩展性，这是工业级系统的标志。
 2.  **Delta Lake vs. Raw Parquet:** 选择Delta Lake增加了对Spark/Delta库的依赖，但彻底解决了批处理ETL中常见的数据一致性和可靠性难题，极大提升了Gold层数据的“黄金”成色。
 3.  **Config Center vs. Hardcoding:** 采用配置中心使得系统更加灵活，运维人员或数据分析师可以在不重新部署代码的情况下调整数据处理逻辑，大大缩短了响应时间。
+4.  **Windows Data Agent for miniQMT:** 通过在Windows端部署一个轻量级HTTP代理服务（基于`xtquantai/server_direct.py`），成功将miniQMT的Windows平台依赖与Project Argus核心系统的Docker化环境解耦。这使得核心数据管道可以保持其跨平台和容器化的优势，同时能够安全、稳定地接入miniQMT数据。采集器通过配置的URL与代理通信，降低了直接库依赖带来的复杂性和潜在冲突。值得注意的是，`xtquantai`项目本身支持MCP (Model Context Protocol)，这意味着该Windows Data Agent的原始项目具备与AI助手集成的能力，为未来系统的智能化扩展（如通过自然语言查询QMT数据或执行简单操作）预留了可能性。

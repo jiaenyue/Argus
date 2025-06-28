@@ -83,10 +83,19 @@ graph LR
 
 #### Epic 1: 核心数据采集与基础处理
 
-> #### **1.1. miniQMT行情采集**
-> **Prio:** 高 | **Status:** `To Do (Sprint 1)` | **Reqs:** `FR-001`, `BR-001`
-> **作为** 一名数据工程师，**我想要** 系统能从主数据源`miniQMT`稳定采集A股市场的日线和分钟线行情，**以便** 为整个数据管道提供基础的、高优先级的原始行情数据。
-> **验收标准:** 1. 成功采集99.5%以上交易日的行情数据。 2. 采集任务由Airflow调度，支持按天执行。 3. 处理基本网络异常并进行有限次重试。
+> #### **1.1. miniQMT行情采集 (通过独立的Windows QMT数据代理子项目)**
+> **Prio:** 高 | **Status:** `To Do (Sprint 1)` | **Reqs:** `FR-001`, `BR-001`, `User Story 1.1`, `User Story 1.1.bis`
+> **作为** 一名数据工程师，**我想要** Project Argus能通过一个独立部署的`Windows QMT数据代理`子项目稳定采集`miniQMT`的A股行情，**以便** 解耦平台依赖并为数据管道提供核心原始数据。
+> **子任务 (Project Argus 范围):**
+>    - [ ] **1.1.1:** 确认/更新 `qmt_collector.py` 中调用外部HTTP代理的逻辑，确保其健壮性和正确的错误处理。
+>    - [ ] **1.1.2:** 验证 `qmt_collector.py` 能正确处理从代理返回的各种数据格式和可能的错误响应。
+>    - [ ] **1.1.3:** 在 Project Argus 文档中（如 `Readme.md`, `system_design.md`）清晰说明对 `project-argus-qmt-agent` 子项目的依赖，并提供其仓库链接和基本配置指引（如环境变量设置）。
+>    - [ ] **1.1.4:** 编写 Project Argus 与 `project-argus-qmt-agent` 集成的端到端测试场景描述（测试用例本身可能由QA或开发共同完成）。
+> **验收标准 (Project Argus 范围):**
+>    1. `qmt_collector.py`能通过配置的URL成功调用独立运行的`Windows QMT数据代理`服务。
+>    2. Project Argus能正确处理和存储从代理获取的数据。
+>    3. Project Argus文档清晰指引了如何设置和使用外部的QMT数据代理。
+> **依赖外部项目:** `project-argus-qmt-agent` (https://github.com/jiaenyue/project-argus-qmt-agent) 必须已独立部署并成功运行。其自身的开发、部署和维护在其自己的项目范围内管理。
 
 > #### **1.2. Kafka事件总线**
 > **Prio:** 高 | **Status:** `To Do (Sprint 1)` | **Reqs:** `NFR-003`
@@ -219,3 +228,21 @@ graph LR
        "Kafka & Redis部署" :2023-11-01, 3d
        Delta Lake环境  :2023-11-06, 3d
     ```
+
+---
+
+### Epic 6: (未来规划) AI集成与智能化扩展
+> #### **6.1.调研xtquantai MCP模式与AI工具集成**
+> **Prio:** 低 (未来) | **Status:** `Future Consideration`
+> **作为** 一名系统架构师，**我想要** 调研`xtquantai`的MCP服务器模式与兼容AI工具（如Cursor）的集成可行性与效果，**以便** 评估未来通过AI助手直接操控QMT或进行数据分析的潜力。
+> **子任务:**
+>    - [ ] **6.1.1:** 学习MCP协议基本原理和`xtquantai`的MCP实现。
+>    - [ ] **6.1.2:** 在测试环境尝试部署`xtquantai`为MCP服务器。
+>    - [ ] **6.1.3:** 测试与至少一种AI工具（如Cursor）的连接和基本交互。
+>    - [ ] **6.1.4:** 撰写调研报告，总结可行性、优缺点及潜在应用场景。
+> **验收标准:** 1. 完成`xtquantai` MCP模式的基本测试。 2. 输出一份包含可行性分析和未来建议的调研报告。
+
+> #### **6.2. (可选) 实现AI助手查询QMT数据PoC**
+> **Prio:** 低 (未来) | **Status:** `Future Consideration` | **Depends on:** `6.1`
+> **作为** 一名高级量化分析师，**我想要** 一个通过AI助手查询QMT数据的原型验证(PoC)，**以便** 体验和评估AI辅助数据获取的便捷性。
+> **验收标准:** 1. PoC能演示通过AI工具成功执行至少三种QMT数据查询。 2. 查询结果能在AI工具中正确展示。
