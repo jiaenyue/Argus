@@ -202,12 +202,12 @@ def get_dynamic_consistency_threshold(market_volatility_index: float) -> float:
 ```mermaid
 graph TD
     subgraph "Plan & Do"
-        A["1. 监控与发现: 发现质量问题"] --> B["2. 分析与定位: 分析根本原因"]
+        A["监控与发现：发现质量问题"] --> B["分析与定位：分析根本原因"]
     end
     subgraph "Check & Act"
-        B --> C["3. 优化与迭代: 优化规则/代码/流程"] --> D["4. 发布与验证: 部署新版本"]
+        B --> C["优化与迭代：优化规则／代码／流程"] --> D["发布与验证：部署新版本"]
     end
-    D --> |季度评审与复盘| A
+    D --> |季度复盘| A
 ```
 
 ### 8. 附录: 核心KPI指标库 (部分示例)
