@@ -29,98 +29,101 @@
 graph TD
     subgraph "Windows 环境 (Windows Environment)"
         direction LR
-        WIN_QMT[fa:fas fa-desktop miniQMT Client]
-        WIN_AGENT["fa:fas fa-network-wired Windows QMT Data Agent<br>(Python HTTP Service based on xtquantai/server_direct.py)"]
+        WIN_QMT["miniQMT Client"]
+        WIN_AGENT["Windows QMT Data Agent - Python HTTP Service"]
         WIN_QMT --> WIN_AGENT
-    end ;; <!-- Correctly closing the first subgraph -->
+    end
 
     subgraph "Docker 环境 (Docker Environment - Project Argus Core)"
-        %% direction TD removed as per user's fix
         subgraph "数据平面 (Data Plane)"
-            %% Data Sources (Now includes the Agent as a source)
             subgraph "A. 数据源 (Sources)"
-                DS_AGENT["fa:fas fa-exchange-alt QMT Data via Agent"]
+                DS_AGENT["QMT Data via Agent"]
                 style DS_AGENT fill:#D2B4DE,stroke:#8E44AD
-                DS2[fa:fas fa-cloud Tushare Pro]
+                DS2["Tushare Pro"]
             end
 
-            %% Ingestion
             subgraph "B. 统一接入与采集 (Ingestion)"
-                %% GW[fa:fas fa-door-open API Gateway] %% Gateway might be less relevant for direct agent call from collector
-                DC[fa:fas fa-satellite-dish 智能数据采集器<br>(qmt_collector.py calls Agent)]
+                DC["智能数据采集器 (qmt_collector.py calls Agent)"]
             end
 
-            %% Buffering
             subgraph "C. 消息总线 (Message Bus)"
-                KAFKA[fa:fas fa-stream Kafka<br><i>raw_data_topic</i>]
+                KAFKA["Kafka - raw_data_topic"]
             end
 
-            %% Processing
             subgraph "D. 数据处理引擎 (Processing Engine)"
-                BP[Bronze Processor<br><i>格式化/标准化</i>]
-                SP[Silver Processor<br><i>融合/清洗/填补</i>]
-                GP[Gold Publisher<br><i>发布到Delta Lake</i>]
+                BP["Bronze Processor - 格式化/标准化"]
+                SP["Silver Processor - 融合/清洗/填补"]
+                GP["Gold Publisher - 发布到 Delta Lake"]
             end
 
-            %% Storage
             subgraph "E. 事务性数据湖仓 (Transactional Lakehouse)"
-                DL[fa:fas fa-gem Delta Lake<br><i>Gold Layer</i>]
-                PART[fa:fas fa-folder-tree Partitioned Storage<br><i>/gold/date=.../symbol=...</i>]
+                DL["Delta Lake - Gold Layer"]
+                PART["Partitioned Storage - /gold/date=.../symbol=..."]
             end
 
-            %% Consumption
             subgraph "F. 数据消费 (Consumption)"
-                NT[fa:fas fa-robot NautilusTrader]
+                NT["NautilusTrader"]
             end
         end
 
         subgraph "控制平面 (Control Plane)"
-            AIRFLOW[fa:fas fa-cogs Apache Airflow]
-            CONFIG[fa:fas fa-cog 配置中心]
-            ALERT[fa:fas fa-bell Alertmanager]
-            USER[fa:fas fa-user-tie Data Analyst/Operator]
+            AIRFLOW["Apache Airflow"]
+            CONFIG["配置中心"]
+            ALERT["Alertmanager"]
+            USER["Data Analyst / Operator"]
         end
 
         subgraph "质量与监控平面 (Quality & Observability Plane)"
-            QDE[fa:fas fa-balance-scale 质量决策引擎]
-            GE[fa:fas fa-check-square Great Expectations]
-            PROM[fa:fas fa-chart-line Prometheus]
-            GRA[fa:fas fa-tachometer-alt Grafana]
-            ELK[fa:fas fa-search ELK Stack]
+            QDE["质量决策引擎"]
+            GE["Great Expectations"]
+            PROM["Prometheus"]
+            GRA["Grafana"]
+            ELK["ELK Stack"]
         end
     end
 
     %% Data Flow
-    WIN_AGENT -- "HTTP Request/Response" --> DC
-    DS2        --> DC %% Tushare still collected directly or via its own gateway if any
-    DC         --> KAFKA
-    KAFKA      --> BP
-    BP         --> SP
-    SP         --> QDE
-    QDE        -- "✅ 通过" --> GP
-    GP         --> DL
-    DL         --> PART
-    PART       --> NT
+    WIN_AGENT -->|HTTP Request/Response| DC
+    DS2 --> DC
+    DC --> KAFKA
+    KAFKA --> BP
+    BP --> SP
+    SP --> QDE
+    QDE -->|Pass| GP
+    GP --> DL
+    DL --> PART
+    PART --> NT
 
     %% Control Flow
-    AIRFLOW    -- "调度" --> DC & BP
-    CONFIG     -- "提供规则" --> DC & SP & QDE
-    CONFIG     -- "Agent URL" --> DC %% Collector gets Agent URL from config
-    QDE        -- "❌ 失败" --> ALERT -- "告警" --> USER
+    AIRFLOW -->|调度| DC
+    AIRFLOW -->|调度| BP
+    CONFIG -->|提供规则| DC
+    CONFIG -->|提供规则| SP
+    CONFIG -->|提供规则| QDE
+    CONFIG -->|Agent URL| DC
+    QDE -->|Fail| ALERT
+    ALERT -->|告警| USER
 
     %% Quality & Observability Flow
-    SP         -- "待验数据" --> GE -- "验证结果" --> QDE
-    DC         --> PROM & ELK
-    BP         --> PROM & ELK
-    SP         --> PROM & ELK
-    GE         --> PROM & ELK
-    WIN_AGENT  -- "Logs/Metrics (Optional)" --> ELK & PROM %% Agent can also send metrics/logs
-    PROM       --> GRA
-    ELK        --> GRA
-    GRA        -- "看板" --> USER
+    SP -->|待验数据| GE
+    GE -->|验证结果| QDE
+    DC --> PROM
+    DC --> ELK
+    BP --> PROM
+    BP --> ELK
+    SP --> PROM
+    SP --> ELK
+    GE --> PROM
+    GE --> ELK
+    WIN_AGENT -->|Logs & Metrics| ELK
+    WIN_AGENT -->|Logs & Metrics| PROM
+    PROM --> GRA
+    ELK --> GRA
+    GRA -->|看板| USER
 
-    %% Styling for the new Windows agent
+    %% Styling
     class WIN_QMT,WIN_AGENT fill:#EAEFF3,stroke:#5D6D7E
+
 ```
 
 ## 🛠️ 技术栈 (Technology Stack)
